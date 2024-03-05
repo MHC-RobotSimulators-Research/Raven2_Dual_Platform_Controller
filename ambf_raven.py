@@ -133,7 +133,7 @@ class ambf_raven:
             # apply offset to joint 3
             jpos[2] += 0.46
             # apply offset to joint 4
-            jpos[3] -= math.pi * 3 /4
+            jpos[3] += math.pi/4
             # convert jpos to degrees
             # for i in range(len(jpos)):
             #     jpos[i] = jpos[i] * ard.Rad2Deg
