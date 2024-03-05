@@ -35,16 +35,18 @@ class ambf_raven:
         self.home_joints = ard.HOME_JOINTS
         self.next_jp = np.zeros((2, 7))
         self.curr_tm = [0, 0]
+        self.curr_dh = ard.HOME_DH.copy()
 
         self.dance_scale_joints = ard.DANCE_SCALE_JOINTS
-        self.loop_rate = ard.LOOP_RATE
+        self.loop_rate = ard.PUBLISH_RATE
         self.raven_joints = ard.RAVEN_JOINTS
         self.rc = [0, 0]
         self.rampup_count = np.array(self.rc)
         self.i = 0
         self.speed = 10.00 / self.loop_rate
         self.rampup_speed = 0.5 / self.loop_rate
-        self.man_steps = 30
+        self.man_steps = 10 # 30 * (ard.COMMAND_RATE / 1000)
+        self.time_last_pub_move = time.time()
 
         self.homed = [False, False]
         self.moved = [False, False]
@@ -52,31 +54,45 @@ class ambf_raven:
         self.limited = [False, False]
 
         print("\nHoming...\n")
+        time.sleep(1)
         self.home_fast()
-        self.set_curr_tm()
         print(self.curr_tm)
 
     def get_raven_type(self):
         return self.raven_type
 
-    def set_curr_tm(self):
+    def set_curr_tm(self, p5=False):
         for i in range(len(self.arms)):
             self.start_jp[i] = self.arms[i].get_all_joint_pos()
-            self.curr_tm[i] = fk.fwd_kinematics(i, self.start_jp[i], ard)
+            self.next_jp[i] = self.start_jp[i].copy()
+            if p5:
+                self.curr_tm[i] = fk.fwd_kinematics_p5(i, self.start_jp[i], ard)
+                print("set tm with p5 kinematics")
+            else:
+                self.curr_tm[i] = fk.fwd_kinematics(i, self.start_jp[i], ard)
+                print("set tm with standard kinematics")
+
 
     def home_fast(self):
-
-        self.next_jp = [self.home_joints, self.home_joints]
+        self.set_curr_tm(True)
+        hj_r = self.home_joints.copy()
+        hj_r[5] *= -1
+        hj_r[6] *= -1
+        self.next_jp = [self.home_joints, hj_r]
         self.move()
+        self.set_curr_tm(True)
 
-        for j in range(len(self.moved)):
-            self.homed[j] = self.moved[j]
+        # for j in range(len(self.moved)):
+        #     self.homed[j] = self.moved[j]
 
-        if all(self.homed):
-            print("Raven is homed!")
+        # if all(self.homed):
+        #     print("Raven is homed!")
+        #
+        # if not all(self.homed):
+        #     print("Raven could not be homed, please try again :(")
 
-        if not all(self.homed):
-            print("Raven could not be homed, please try again :(")
+    def home_grasper(self, arm):
+        self.curr_dh[arm] = ard.HOME_DH[arm]
 
     def sine_dance(self):
         if self.i == 0:
@@ -110,6 +126,17 @@ class ambf_raven:
         # Add jpos for both arms
         for i in range(len(self.arms)):
             jpos = self.arms[i].get_all_joint_pos()
+            # fix negative right arm grasper
+            if i:
+                jpos[5] *= -1
+                jpos[6] *= -1
+            # apply offset to joint 3
+            jpos[2] += 0.46
+            # apply offset to joint 4
+            jpos[3] += math.pi/4
+            # convert jpos to degrees
+            # for i in range(len(jpos)):
+            #     jpos[i] = jpos[i] * ard.Rad2Deg
             jpos.insert(3, 0)
             status.extend(jpos)
             # status.extend(self.arms[i].get_all_joint_pos().insert(3, 0))  # 7 numbers
@@ -291,25 +318,40 @@ class ambf_raven:
         new_jp = jpl[0]
         self.next_jp[arm] = new_jp
 
-    def plan_move_abs(self, arm, tm, gangle, p5=False, home_dh=ard.HOME_DH):
+    def plan_move_abs(self, arm, delta_tm, gangle, p5=False, delta_dh=None, ):
         """
         Plans a move using the absolute cartesian position
         Args:
             arm (int) : 0 for the left arm and 1 for the right arm
-            tm (numpy.array) : desired transformation matrix changes
+            delta_tm (numpy.array) : desired transformation matrix changes
             gangle (float) : the gripper angle, 0 is closed
             p5 (bool) : when false uses standard kinematics, when true uses p5 kinematics
-            home_dh (array) : array containing home position, or desired postion of the
-                joints not set by cartesian coordinates in inv_kinematics_p5
+            delta_dh (array) : array containing home position, or desired postion of the
+            joints not set by cartesian coordinates in inv_kinematics_p5
         """
+        # update curr_tm
         if arm == 1:
             gangle = -gangle
-
+        # tm[0, 3] *= -1
         self.start_jp[arm] = self.next_jp[arm]
-        self.curr_tm[arm] += tm
-        # print(self.curr_tm[arm])
+        self.curr_tm[arm] = np.matmul(delta_tm, self.curr_tm[arm])
+
+        # update curr_dh
+        if delta_dh is not None:
+            if not arm:
+                if abs(self.curr_dh[0][3] + delta_dh[0][3]) < math.pi:
+                    self.curr_dh[0][3] += delta_dh[0][3]
+                if abs(self.curr_dh[0][4] - delta_dh[0][4]) < math.pi/2:
+                    self.curr_dh[0][4] -= delta_dh[0][4]
+            else:
+                if abs(self.curr_dh[1][3] - delta_dh[1][3]) < math.pi:
+                    self.curr_dh[1][3] -= delta_dh[1][3]
+                if abs(self.curr_dh[1][4] + delta_dh[1][4]) < math.pi/2:
+                    self.curr_dh[1][4] += delta_dh[1][4]
+
+        # generate new_jp
         if p5:
-            jpl = ik.inv_kinematics_p5(arm, self.curr_tm[arm], gangle, home_dh, ard)
+            jpl = ik.inv_kinematics_p5(arm, self.curr_tm[arm], gangle, self.curr_dh[arm], ard)
         else:
             jpl = ik.inv_kinematics(arm, self.curr_tm[arm], gangle, ard)
         self.limited[arm] = jpl[1]
@@ -326,10 +368,7 @@ class ambf_raven:
             arm (int) : 0 for the left arm and 1 for the right arm
         """
         # Calculate delta jp
-        # for i in range(self.raven_joints):
-        #     self.start_jp[arm][i] = self.arms[arm].get_joint_pos(i)
-        #     self.delta_jp[arm][i] = self.next_jp[arm][i] - self.arms[arm].get_joint_pos(i)
-
+        # self.start_jp[arm] = self.arms[arm].get_all_joint_pos()
         self.delta_jp[arm] = self.next_jp[arm] - self.start_jp[arm]
 
 
@@ -379,9 +418,14 @@ class ambf_raven:
         # print("inc: ", increments)
 
         for i in range(increments):
+            interval_pub = time.time() - self.time_last_pub_move
+            # print(str(interval_pub)) # [debug]
+            if interval_pub < ard.PUBLISH_TIME:
+                time.sleep(ard.PUBLISH_TIME - interval_pub)  # If the time interval is too short, wait util do not exceed the max rate
+                # print('time sleep:' + str(self.min_interval_move-interval_pub)) #[debug]
+            self.time_last_pub_move = time.time()
             self.moved[0] = self.move_increment(0, i, increments)
             self.moved[1] = self.move_increment(1, i, increments)
-            time.sleep(ard.COMMAND_TIME)
 
     def move_now(self, arm):
         """

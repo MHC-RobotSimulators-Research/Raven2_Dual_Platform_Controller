@@ -19,7 +19,10 @@ cube tracing and soft body manipulation'''
 class physical_raven:
     def __init__(self):
 
-        rospy.init_node('raven_keyboard_controller', anonymous=True)
+        try:
+            rospy.init_node('raven_keyboard_controller', anonymous=True)
+        except:
+            pass
 
         self.arm_ctl_l = physical_raven_arm(name_space = ' ', robot_name = 'arm1', grasper_name = 'grasp1')
         self.arm_ctl_r = physical_raven_arm(name_space = ' ', robot_name = 'arm2', grasper_name = 'grasp2')
@@ -32,16 +35,17 @@ class physical_raven:
         self.next_jp = np.zeros((2, 7))
         self.jr = np.zeros((2, 7))
         self.curr_tm = [0, 0]
+        self.curr_dh = prd.HOME_DH.copy()
 
         self.dance_scale_joints = prd.DANCE_SCALE_JOINTS
-        self.loop_rate = prd.LOOP_RATE
+        self.loop_rate = prd.PUBLISH_RATE
         self.raven_joints = prd.RAVEN_JOINTS
         self.rc = [0, 0]
         self.rampup_count = np.array(self.rc)
         self.i = 0
         self.speed = 10.00 / self.loop_rate
         self.rampup_speed = 0.5 / self.loop_rate
-        self.man_steps = 30
+        self.man_steps = 10 # 30 * (prd.COMMAND_RATE / 1000)
 
         self.homed = [False, False]
         self.moved = [False, False]
@@ -50,7 +54,7 @@ class physical_raven:
 
         # print("\nHoming...\n")
         # self.home_fast()
-        self.set_curr_tm()
+        self.set_curr_tm(True)
         print(self.curr_tm)
         print(self.start_jp)
         # self.resume()
@@ -66,7 +70,7 @@ class physical_raven:
         self.arm_ctl_l.pub_state_command('pause')
         self.arm_ctl_r.pub_state_command('pause')
 
-    def set_curr_tm(self):
+    def set_curr_tm(self, p5=False):
         success = False
         while not success:
             time.sleep(1)
@@ -82,24 +86,31 @@ class physical_raven:
                         print("Unable to get Raven position, trying again...")
 
         for i in range(len(self.arms)):
-            self.next_jp[i] = self.start_jp[i]
-            self.curr_tm[i] = fk.fwd_kinematics_p5(i, self.start_jp[i], prd)
+            self.next_jp[i] = self.start_jp[i].copy()
+            if p5:
+                self.curr_tm[i] = fk.fwd_kinematics_p5(i, self.start_jp[i], prd)
+            else:
+                self.curr_tm[i] = fk.fwd_kinematics(i, self.start_jp[i], prd)
+
 
     def home_fast(self):
 
-        self.set_curr_tm()
-
+        self.set_curr_tm(True)
         self.next_jp = [self.home_joints, self.home_joints]
         self.move()
+        self.set_curr_tm(True)
 
-        for j in range(len(self.moved)):
-            self.homed[j] = self.moved[j]
+        # for j in range(len(self.moved)):
+        #     self.homed[j] = self.moved[j]
 
-        if all(self.homed):
-            print("Raven is homed!")
+        # if all(self.homed):
+        #     print("Raven is homed!")
+        #
+        # if not all(self.homed):
+        #     print("Raven could not be homed, please try again :(")
 
-        if not all(self.homed):
-            print("Raven could not be homed, please try again :(")
+    def home_grasper(self, arm):
+        self.curr_dh[arm] = prd.HOME_DH[arm]
 
     def sine_dance(self):
         # if self.i == 0:
@@ -138,7 +149,7 @@ class physical_raven:
         idx_count = 1
 
         for index in range(0, 16):
-            status[0, idx_count] = ("%.6f" % msg.jpos[index])
+            status[0, idx_count] = ("%.6f" % (msg.jpos[index] * prd.Deg2Rad))
             idx_count += 1
 
         status[0, idx_count] = ("%.6f" % msg.runlevel)
@@ -192,7 +203,7 @@ class physical_raven:
             idx_count += 1
 
         for index in range(0, 16):
-            status[0, idx_count] = ("%.6f" % msg.jvel[index])
+            status[0, idx_count] = float("%.6f" % (msg.jvel[index] * prd.Deg2Rad))
             idx_count += 1
 
         for index in range(0, 16):
@@ -325,25 +336,39 @@ class physical_raven:
         print(new_jp)
         self.next_jp[arm] = new_jp
 
-    def plan_move_abs(self, arm, tm, gangle, p5=False, home_dh=prd.HOME_DH):
+    def plan_move_abs(self, arm, delta_tm, gangle, p5=False, delta_dh=None):
         """
         Plans a move using the absolute cartesian position
         Args:
             arm (int) : 0 for the left arm and 1 for the right arm
-            tm (numpy.array) : desired transformation matrix changes
+            delta_tm (numpy.array) : desired transformation matrix changes
             gangle (float) : the gripper angle, 0 is closed
             p5 (bool) : when false uses standard kinematics, when true uses p5 kinematics
             home_dh (array) : array containing home position, or desired postion of the
                 joints not set by cartesian coordinates in inv_kinematics_p5
         """
+        # update curr_tm
+        self.curr_tm[arm] = np.matmul(delta_tm, self.curr_tm[arm])
         self.start_jp[arm] = self.next_jp[arm]
 
-        tm[1, 3] *= -1
+        gangle = math.pi*7/6 - gangle
 
-        self.curr_tm[arm] += tm
-        # print("curr_tm: ", self.curr_tm[arm])
+        # update curr_dh
+        if delta_dh is not None:
+            if not arm:
+                if abs(self.curr_dh[0][3] + delta_dh[0][3]) < math.pi:
+                    self.curr_dh[0][3] += delta_dh[0][3]
+                if abs(self.curr_dh[0][4] - delta_dh[0][4]) < math.pi/2:
+                    self.curr_dh[0][4] -= delta_dh[0][4]
+            else:
+                if abs(self.curr_dh[1][3] - delta_dh[1][3]) < math.pi:
+                    self.curr_dh[1][3] -= delta_dh[1][3]
+                if abs(self.curr_dh[1][4] + delta_dh[1][4]) < math.pi/2:
+                    self.curr_dh[1][4] += delta_dh[1][4]
+
+        # generate new_jp
         if p5:
-            jpl = ik.inv_kinematics_p5(arm, self.curr_tm[arm], gangle, home_dh, prd)
+            jpl = ik.inv_kinematics_p5(arm, self.curr_tm[arm], gangle, self.curr_dh[arm], prd)
         else:
             jpl = ik.inv_kinematics(arm, self.curr_tm[arm], gangle, prd)
         self.limited[arm] = jpl[1]
@@ -361,7 +386,7 @@ class physical_raven:
         Args:
             arm (int) : 0 for the left arm and 1 for the right arm
         """
-
+        # self.start_jp[arm] = self.arms[arm].get_measured_jpos()
         self.delta_jp[arm] = self.next_jp[arm] - self.start_jp[arm]
         # print("arm", arm, " delta_jp: ", self.delta_jp[arm])
 
@@ -387,9 +412,9 @@ class physical_raven:
             # print(self.jr[i])
 
         for i in range(increments):
-            self.arms[0].pub_jr_command(self.arms[0].seven2sixteen(self.jr[0]))
-            self.arms[1].pub_jr_command(self.arms[1].seven2sixteen(self.jr[1]))
-            # time.sleep(prd.COMMAND_TIME)
+            self.arms[0].pub_jr_command(self.jr[0])
+            self.arms[1].pub_jr_command(self.jr[1])
+            # dont need, the publisher checks to ensure commands are appropriately spaced time.sleep(prd.COMMAND_TIME)
 
     # def move_now(self, arm):
     #     """

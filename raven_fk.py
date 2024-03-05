@@ -1,6 +1,8 @@
 # from physical_raven_def import *
 import math as m
 import numpy as np
+import ambf_raven_def as ard
+import physical_raven_def as prd
 
 def joint_to_dhvalue(joint, arm, raven_def):
     success = False
@@ -12,6 +14,7 @@ def joint_to_dhvalue(joint, arm, raven_def):
             if i == 5:
                 if arm == 0:
                     dhvalue[i] =  (joint[i] - joint[i+1])
+
                 else:
                     dhvalue[i] = -(joint[i] - joint[i+1])
             else:
@@ -83,10 +86,17 @@ def fwd_kinematics(arm, input_joint_pos, raven_def):
         dh_a[i] = raven_def.RAVEN_DH_A[arm][i]
 
     if raven_def.RAVEN_TYPE:
-        output_transformation = np.matmul(np.matmul(raven_def.RAVEN_T_CB, raven_def.RAVEN_T_B0[arm]), fwd_trans(0, 6, dh_alpha, dh_theta, dh_a, dh_d))
+        # output_transformation = np.matmul(np.matmul(raven_def.RAVEN_T_CB, raven_def.RAVEN_T_B0[arm]), fwd_trans(0, 6, dh_alpha, dh_theta, dh_a, dh_d))
+        # output_transformation = fwd_trans(0, 6, dh_alpha, dh_theta, dh_a, dh_d)
+        # output_transformation = np.matmul(np.matmul(raven_def.X_ROT, raven_def.RAVEN_T_B0[arm]), fwd_trans(0, 5, dh_alpha, dh_theta, dh_a, dh_d))
+        # output_transformation = np.matmul(raven_def.Z_ROT[arm], fwd_trans(0, 6, dh_alpha, dh_theta, dh_a, dh_d))
+        output_transformation = np.matmul(np.matmul(raven_def.RAVEN_T_B0[arm], raven_def.Z_ROT[arm]), fwd_trans(0, 6, dh_alpha, dh_theta, dh_a, dh_d))
     else:
-        output_transformation = np.matmul(np.matmul(raven_def.RAVEN_T_CB, raven_def.RAVEN_T_B0[arm]), fwd_trans(0, 6, dh_alpha, dh_theta, dh_a, dh_d))
-
+        # output_transformation = np.matmul(np.matmul(raven_def.RAVEN_T_CB, raven_def.RAVEN_T_B0[arm]), fwd_trans(0, 6, dh_alpha, dh_theta, dh_a, dh_d))
+        # output_transformation = np.matmul(raven_def.RAVEN_T_B0[arm], fwd_trans(0, 6, dh_alpha, dh_theta, dh_a, dh_d))
+        # output_transformation = np.matmul(np.matmul(raven_def.X_ROT, raven_def.RAVEN_T_B0[arm]), fwd_trans(0, 5, dh_alpha, dh_theta, dh_a, dh_d))
+        # output_transformation = np.matmul(raven_def.RAVEN_T_B0[arm], fwd_trans(0, 6, dh_alpha, dh_theta, dh_a, dh_d))
+        output_transformation = np.matmul(np.matmul(raven_def.RAVEN_T_B0[arm], raven_def.Z_ROT[arm]), fwd_trans(0, 6, dh_alpha, dh_theta, dh_a, dh_d))
     return output_transformation
 
 
@@ -118,8 +128,36 @@ def fwd_kinematics_p5(arm, input_joint_pos, raven_def):
         dh_alpha[i] = raven_def.RAVEN_DH_ALPHA[arm][i]
         dh_a[i] = raven_def.RAVEN_DH_A[arm][i]
 
+    if raven_def.RAVEN_TYPE:
+        # output_transformation = np.matmul(np.matmul(raven_def.RAVEN_T_CB, raven_def.RAVEN_T_B0[arm]), fwd_trans(0, 5, dh_alpha, dh_theta, dh_a, dh_d))
+        # output_transformation = np.matmul(raven_def.RAVEN_T_B0[arm], fwd_trans(0, 5, dh_alpha, dh_theta, dh_a, dh_d))
+        # output_transformation = np.matmul(np.matmul(raven_def.X_ROT, raven_def.RAVEN_T_B0[arm]), fwd_trans(0, 5, dh_alpha, dh_theta, dh_a, dh_d))
+        # output_transformation = np.matmul(raven_def.Z_ROT[arm], fwd_trans(0, 5, dh_alpha, dh_theta, dh_a, dh_d))
+        output_transformation = np.matmul(np.matmul(raven_def.RAVEN_T_B0[arm], raven_def.Z_ROT[arm]), fwd_trans(0, 5, dh_alpha, dh_theta, dh_a, dh_d))
 
 
-    output_transformation = np.matmul(np.matmul(raven_def.RAVEN_T_CB, raven_def.RAVEN_T_B0[arm]), fwd_trans(0, 5, dh_alpha, dh_theta, dh_a, dh_d))
+    else:
+        # output_transformation = np.matmul(np.matmul(raven_def.RAVEN_T_CB, raven_def.RAVEN_T_B0[arm]), fwd_trans(0, 5, dh_alpha, dh_theta, dh_a, dh_d))
+        # output_transformation = np.matmul(raven_def.RAVEN_T_B0[arm], fwd_trans(0, 6, dh_alpha, dh_theta, dh_a, dh_d))
+        # output_transformation = np.matmul(np.matmul(raven_def.X_ROT, raven_def.RAVEN_T_B0[arm]), fwd_trans(0, 5, dh_alpha, dh_theta, dh_a, dh_d))
+        # output_transformation = fwd_trans(0, 5, dh_alpha, dh_theta, dh_a, dh_d)
+        # output_transformation = np.matmul(raven_def.RAVEN_T_B0[arm], fwd_trans(0, 6, dh_alpha, dh_theta, dh_a, dh_d))
+        output_transformation = np.matmul(np.matmul(raven_def.RAVEN_T_B0[arm], raven_def.Z_ROT[arm]), fwd_trans(0, 5, dh_alpha, dh_theta, dh_a, dh_d))
 
     return output_transformation
+
+def main():
+
+
+    # dh_vals_l = joint_to_dhvalue(ard.HOME_JOINTS, 1, ard)
+    # print(dh_vals_l)
+    # print(fwd_kinematics(0, prd.HOME_JOINTS, prd))
+    # print(fwd_kinematics(1, prd.HOME_JOINTS, prd))
+    print(fwd_kinematics_p5(0, prd.HOME_JOINTS, prd))
+    print(fwd_kinematics_p5(1, prd.HOME_JOINTS, prd))
+    # print(fwd_kinematics(0, ard.HOME_JOINTS, ard))
+    # print(fwd_kinematics(1, ard.HOME_JOINTS, ard))
+    print(fwd_kinematics_p5(0, ard.HOME_JOINTS, ard))
+    print(fwd_kinematics_p5(1, ard.HOME_JOINTS, ard))
+
+main()

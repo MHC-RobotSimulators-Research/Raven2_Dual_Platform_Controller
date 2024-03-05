@@ -43,11 +43,13 @@ control[3] = File Mode: controller inputs
 control[4] = File Mode: jpos
 control[5] = Sine Dance
 '''
-DEADZONE = 0.1  # controller axes must move beyond this before they register as an input, prevents drift
-DIV = 500  # amount raw input values are divided by to produce motion
+DEADZONE = 0.15  # controller axes must move beyond this before they register as an input, prevents drift
+DIV = 2000  # amount raw input values are divided by to produce motion
 ALLOW_FAKE_CONTROLLER = True
 RECORD = False
 RECORDING = False
+SHOW_TM = False
+GRASPING = False
 FILE_OUT = ""
 FILE_IN = ""
 
@@ -70,34 +72,35 @@ def update_pos_two_arm(controller):
     global DEADZONE
     global DIV
 
-    delta_tm = [np.matrix([[0, 0, 0, 0],
-                          [0, 0, 0, 0],
-                          [0, 0, 0, 0],
-                          [0, 0, 0, 0]], dtype=float),
-                np.matrix([[0, 0, 0, 0],
-                           [0, 0, 0, 0],
-                           [0, 0, 0, 0],
-                           [0, 0, 0, 0]], dtype=float)]
+    delta_tm = [np.matrix([[1., 0., 0., 0.],
+                          [0., 1., 0., 0.],
+                          [0., 0., 1., 0.],
+                          [0., 0., 0., 1.]], dtype=float),
+                np.matrix([[1., 0., 0., 0.],
+                           [0., 1., 0., 0.],
+                           [0., 0., 1., 0.],
+                           [0., 0., 0., 1.]], dtype=float)]
 
     gangle = [0, 0]
 
     # Update coordinates for both arms
     for arm in range(2):
-        if controller[arm][3] == 1 and DEADZONE < abs(controller[arm][1]):
-            delta_tm[arm][2, 3] = -controller[arm][1] / DIV
-        else:
-            # note x and y are swapped to make controls more intuitive
-            if DEADZONE < abs(controller[arm][0]):
-                delta_tm[arm][1, 3] = -controller[arm][0] / DIV
-            if DEADZONE < abs(controller[arm][1]):
-                delta_tm[arm][0, 3] = -controller[arm][1] / DIV
+        if DEADZONE < m.sqrt((controller[arm][0] ** 2) + (controller[arm][1] ** 2)):
+            if controller[arm][3]:
+                delta_tm[arm][2, 3] = -controller[arm][1] / DIV
+
+            else:
+                # note x and y are swapped to make controls more intuitive
+                delta_tm[arm][0, 3] = controller[arm][0] / DIV
+                delta_tm[arm][1, 3] = -controller[arm][1] / DIV
+
         # Set gripper angles
         gangle[arm] = 1 - (controller[arm][2] / 4)
 
     return delta_tm, gangle
 
 
-def update_pos_one_arm(controller, arm, curr_dh):
+def update_pos_one_arm(controller, arm):
     """
     Generates position and grasper jpos offsets for one arm using a xbox controller as input
     Args:
@@ -109,25 +112,29 @@ def update_pos_one_arm(controller, arm, curr_dh):
     global DEADZONE
     global DIV
 
-    delta_tm = [np.matrix([[0, 0, 0, 0],
-                          [0, 0, 0, 0],
-                          [0, 0, 0, 0],
-                          [0, 0, 0, 0]], dtype=float),
-                np.matrix([[0, 0, 0, 0],
-                           [0, 0, 0, 0],
-                           [0, 0, 0, 0],
-                           [0, 0, 0, 0]], dtype=float)]
+    delta_tm = [np.matrix([[1, 0, 0, 0],
+                          [0, 1, 0, 0],
+                          [0, 0, 1, 0],
+                          [0, 0, 0, 1]], dtype=float),
+                np.matrix([[1, 0, 0, 0],
+                           [0, 1, 0, 0],
+                           [0, 0, 1, 0],
+                           [0, 0, 0, 1]], dtype=float)]
 
     gangle = [0, 0]
 
+    delta_dh = np.array([[0, 0, 0, 0, 0, 0, 0],
+                        [0, 0, 0, 0, 0, 0, 0]],
+                       dtype="float")
+
     # Cartesian control of desired arm
-    if controller[0][3] == 1 and DEADZONE < abs(controller[0][1]):
-        delta_tm[arm][2, 3] = -controller[0][1] / DIV
-    else:
-        if DEADZONE < abs(controller[0][0]):
-            delta_tm[arm][1, 3] = -controller[0][0] / DIV
-        if DEADZONE < abs(controller[0][1]):
-            delta_tm[arm][0, 3] = -controller[0][1] / DIV
+    if DEADZONE < m.sqrt((controller[0][0] ** 2) + (controller[0][1] ** 2)):
+        if controller[0][3]:
+            delta_tm[arm][2, 3] = -controller[0][1] / DIV
+        else:
+            delta_tm[arm][0, 3] = controller[0][0] / DIV
+
+            delta_tm[arm][1, 3] = -controller[0][1] / DIV
 
     # Left arm
     if not arm:
@@ -136,12 +143,10 @@ def update_pos_one_arm(controller, arm, curr_dh):
 
         # Set right j4
         if DEADZONE < abs(controller[1][0]):
-            if abs(curr_dh[0][3] - controller[1][0] / 10) < m.pi:
-                curr_dh[0][3] += -controller[1][0] / 10
+            delta_dh[0][3] += -controller[1][0] / 10
         # Position j5
         if DEADZONE < abs(controller[1][1]):
-            if abs(curr_dh[0][4] - controller[1][1] / 10) < 2:
-                curr_dh[0][4] += -controller[1][1] / 10
+            delta_dh[0][4] += -controller[1][1] / 10
 
     # Right arm
     else:
@@ -150,14 +155,12 @@ def update_pos_one_arm(controller, arm, curr_dh):
 
         # Set right j4
         if DEADZONE < abs(controller[1][0]):
-            if abs(curr_dh[1][3] + controller[1][0] / 10) < m.pi:
-                curr_dh[1][3] += controller[1][0] / 10
+            delta_dh[1][3] += controller[1][0] / 10
         # Position j5
         if DEADZONE < abs(controller[1][1]):
-            if abs(curr_dh[1][4] + controller[1][1] / 10) < 2:
-                curr_dh[1][4] += controller[1][1] / 10
+            delta_dh[1][4] += controller[1][1] / 10
 
-    return delta_tm, gangle, curr_dh
+    return delta_tm, gangle, delta_dh
 
 
 def rumble_if_limited(raven, xbc):
@@ -189,15 +192,13 @@ def do(ravens, xbc, grasper, recorder=None, reader=None):
     global RECORD
     global RECORDING
     global FILE_OUT
+    global SHOW_TM
+    global GRASPING
 
     # Sets which mode will be used in manual control
     arm_control = [True, True]
     # True for p5 ik and false for standard ik
     ik_mode = True
-    # Current DH values for each arm, defaults to home position
-    curr_dh = np.array([[1.04719755, 1.88495559, -0.03, 2.35619449 - m.pi / 2, 0., 0., 0.52359878],
-                        [1.04719755, 1.88495559, -0.03, 2.35619449 - m.pi / 2, 0., -0., 0.52359878]],
-                       dtype="float")
 
     while CONTROL[0]:
 
@@ -207,6 +208,9 @@ def do(ravens, xbc, grasper, recorder=None, reader=None):
             '''
             for raven in ravens:
                 raven.home_fast()
+                raven.home_grasper(0)
+                raven.home_grasper(1)
+                arm_control = [True, True]
                 control_reset()
 
         if CONTROL[2] and xbc is None:
@@ -306,17 +310,25 @@ def do(ravens, xbc, grasper, recorder=None, reader=None):
             # Set kinematics mode
             if controller[2][0]:
                 ik_mode = True
+                for raven in ravens:
+                    raven.set_curr_tm(True)
                 print("Using p5 inverse kinematics")
             elif controller[2][1]:
                 ik_mode = False
+                for raven in ravens:
+                    raven.set_curr_tm(False)
                 print("Using standard inverse kinematics")
 
             # Home left gripper
             if controller[2][2]:
-                curr_dh[0] = ard.HOME_DH[0]
+                for raven in ravens:
+                    print("homing left grasper")
+                    raven.home_grasper(0)
             # Home right gripper
             if controller[2][3]:
-                curr_dh[1] = ard.HOME_DH[1]
+                for raven in ravens:
+                    print("homing right grasper")
+                    raven.home_grasper(1)
 
             for raven in ravens:
                 # Control both raven arms
@@ -324,10 +336,10 @@ def do(ravens, xbc, grasper, recorder=None, reader=None):
                     # modify position using controller inputs
                     delta_tm, gangle = update_pos_two_arm(controller)
                     # Plan next move based off of modified cartesian coordinates
-                    raven.plan_move_abs(0, delta_tm[0], gangle[0], ik_mode, curr_dh)
-                    raven.plan_move_abs(1, delta_tm[1], gangle[1], ik_mode, curr_dh)
+                    raven.plan_move_abs(0, delta_tm[0], gangle[0], ik_mode)
+                    raven.plan_move_abs(1, delta_tm[1], gangle[1], ik_mode)
 
-                    if not raven.get_raven_type():
+                    if not raven.get_raven_type() and GRASPING:
                         try:
                             for i in range(2):
                                 grasper.set_grasp(i, controller[i][2])
@@ -342,11 +354,11 @@ def do(ravens, xbc, grasper, recorder=None, reader=None):
                     if arm_control[1]:
                         arm = 1
                     # modify position using controller inputs
-                    delta_tm, gangle, curr_dh = update_pos_one_arm(controller,arm, curr_dh)
+                    delta_tm, gangle, delta_dh = update_pos_one_arm(controller,arm)
                     # Plan new position based off of desired cartesian changes
-                    raven.plan_move(arm, delta_tm[arm], gangle[arm], True, curr_dh)
+                    raven.plan_move_abs(arm, delta_tm[arm], gangle[arm], True, delta_dh)
 
-                    if not raven.get_raven_type():
+                    if not raven.get_raven_type() and GRASPING:
                         try:
                             grasper.set_grasp(arm, controller[1][2])
                             grasper.grasp_object(arm)
@@ -358,6 +370,11 @@ def do(ravens, xbc, grasper, recorder=None, reader=None):
                 # print(len(raven.get_raven_status()))
                 # rumble the controller when raven is limited
                 rumble_if_limited(raven, xbc)
+
+                if SHOW_TM:
+                    print("\nleft: \n", raven.curr_tm[0], "\nright: \n", raven.curr_tm[1])
+                    SHOW_TM = False
+
 
         while CONTROL[3] and not CONTROL[2]:
             '''
@@ -457,6 +474,7 @@ def _get_input():
     global RECORD
     global FILE_OUT
     global FILE_IN
+    global SHOW_TM
 
     print_menu()
 
@@ -518,6 +536,9 @@ def _get_input():
             RECORD = False
             print("Recording stopped\n"
                   "Press a key to switch modes or press 'm' to show the menu")
+
+        elif userinput == 't' and CONTROL[2]:
+            SHOW_TM = True
 
 
 def file_loader():
