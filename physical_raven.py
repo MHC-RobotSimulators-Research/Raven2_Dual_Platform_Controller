@@ -351,6 +351,8 @@ class physical_raven:
         self.curr_tm[arm] = np.matmul(delta_tm, self.curr_tm[arm])
         self.start_jp[arm] = self.next_jp[arm]
 
+        gangle = math.pi*7/6 - gangle
+
         # update curr_dh
         if delta_dh is not None:
             if not arm:
