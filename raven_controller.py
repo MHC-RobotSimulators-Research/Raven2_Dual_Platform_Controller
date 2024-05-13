@@ -52,6 +52,7 @@ SHOW_TM = False
 GRASPING = False
 FILE_OUT = ""
 FILE_IN = ""
+SHOW_FREQUENCY = True
 
 
 def control_reset():
@@ -374,6 +375,9 @@ def do(ravens, xbc, grasper, recorder=None, reader=None):
                 if SHOW_TM:
                     print("\nleft: \n", raven.curr_tm[0], "\nright: \n", raven.curr_tm[1])
                     SHOW_TM = False
+
+                if SHOW_FREQUENCY:
+                    print("freq: ", raven.actual_freq)
 
 
         while CONTROL[3] and not CONTROL[2]:

@@ -59,6 +59,13 @@ class physical_raven:
         print(self.start_jp)
         # self.resume()
 
+        self.last_time = -1
+        self.actual_freq = -1
+
+    def calc_freq(self):
+        self.actual_freq = 1 / (time.time() - self.last_time)
+        self.last_time = time.time()
+
     def get_raven_type(self):
         return self.raven_type
 
@@ -414,6 +421,7 @@ class physical_raven:
         for i in range(increments):
             self.arms[0].pub_jr_command(self.jr[0])
             self.arms[1].pub_jr_command(self.jr[1])
+            self.calc_freq()
             # dont need, the publisher checks to ensure commands are appropriately spaced time.sleep(prd.COMMAND_TIME)
 
     # def move_now(self, arm):

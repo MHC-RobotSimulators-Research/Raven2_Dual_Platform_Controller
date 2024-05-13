@@ -58,6 +58,13 @@ class ambf_raven:
         self.home_fast()
         print(self.curr_tm)
 
+        self.last_time = -1
+        self.actual_freq = -1
+
+    def calc_freq(self):
+        self.actual_freq = 1/(time.time() - self.last_time)
+        self.last_time = time.time()
+
     def get_raven_type(self):
         return self.raven_type
 
