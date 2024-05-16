@@ -1,3 +1,26 @@
+"""
+Raven II Dual Platform Controller: control software for the Raven II robot. Copyright © 2023-2024 Yun-Hsuan Su,
+Natalie Chalfant, Mai Bui, Sean Fabrega, and the Mount Holyoke Intelligent Medical Robotics Laboratory.
+
+This file is a part of Raven II Dual Platform Controller.
+
+Raven II Dual Platform Controller is free software: you can redistribute it and/or modify it under the terms of the
+GNU Lesser General Public License as published by the Free Software Foundation, either version 3 of the License,
+or (at your option) any later version.
+
+Raven II Dual Platform Controller is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+See the GNU Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public License along with Raven II Dual Platform Controller.
+If not, see <http://www.gnu.org/licenses/>.
+
+ambf_xbox_controller_fake.py
+
+date: May 13, 2024
+author: Natalie Chalfant, Mai Bui, Sean Fabrega
+"""
+
 import math
 import time
 
