@@ -134,7 +134,10 @@ class physical_raven_arm():
 
         # Subscriber and publisher of robot operation state
         topic = "/" + self.robot_name + "/operating_state"
-        self.__subscriber_operating_state = rospy.Subscriber(topic, crtk_msgs.msg.OperatingState, self.__callback_operating_state)
+        try:
+            self.__subscriber_operating_state = rospy.Subscriber(topic, crtk_msgs.msg.operating_state, self.__callback_operating_state)
+        except AttributeError:
+            self.__subscriber_operating_state = rospy.Subscriber(topic, crtk_msgs.msg.OperatingState, self.__callback_operating_state)
 
         topic = "/" + self.robot_name + "/state_command"
         self.__publisher_state_command = rospy.Publisher(topic, crtk_msgs.msg.StringStamped, latch = True, queue_size = 1)
