@@ -1,3 +1,26 @@
+"""
+Raven II Dual Platform Controller: control software for the Raven II robot. Copyright © 2023-2024 Yun-Hsuan Su,
+Natalie Chalfant, Mai Bui, Sean Fabrega, and the Mount Holyoke Intelligent Medical Robotics Laboratory.
+
+This file is a part of Raven II Dual Platform Controller.
+
+Raven II Dual Platform Controller is free software: you can redistribute it and/or modify it under the terms of the
+GNU Lesser General Public License as published by the Free Software Foundation, either version 3 of the License,
+or (at your option) any later version.
+
+Raven II Dual Platform Controller is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+See the GNU Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public License along with Raven II Dual Platform Controller.
+If not, see <http://www.gnu.org/licenses/>.
+
+raven_controller.py
+
+date: May 13, 2024
+author: Natalie Chalfant, Mai Bui, Sean Fabrega
+"""
+
 import threading as th
 import sys
 import tty
@@ -52,6 +75,7 @@ SHOW_TM = False
 GRASPING = False
 FILE_OUT = ""
 FILE_IN = ""
+SHOW_FREQUENCY = True
 
 
 def control_reset():
@@ -374,6 +398,9 @@ def do(ravens, xbc, grasper, recorder=None, reader=None):
                 if SHOW_TM:
                     print("\nleft: \n", raven.curr_tm[0], "\nright: \n", raven.curr_tm[1])
                     SHOW_TM = False
+
+                if SHOW_FREQUENCY:
+                    print("freq: ", raven.actual_freq)
 
 
         while CONTROL[3] and not CONTROL[2]:

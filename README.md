@@ -1,42 +1,59 @@
-# Python Controller for Raven II
-Author: Natalie Chalfant (chalf22n@mtholyoke.edu)
+# Raven II Dual Platform Controller: control software for the Raven II robot
+Author: Natalie Chalfant (chalf22n@mtholyoke.edu), Mai Bui (bui23m@mtholyoke.edu), Sean Fabrega, Yun-Hsuan Su 
+(msu@mtholyoke.edu)
 
-AMBF Raven controller is a Python client that controls the simulated Raven II surgical robot in AMBF. 
-It consists of 5 different modes: homing, sine dance, file mode, and manual mode. Joint level control 
-is possible using the file mode while manual allows cartesian control in realtime using an Xbox controller.
+## Description:
+Raven II Dual Platform Controller is a Python client for controlling the Raven II robot using CRTK, and the simulated
+Raven II robot in AMBF. It allows for realtime control using an Xbox controller as well as the ability to record and
+replay trajectories across Raven II types. 
 
-This controller is designed to work with both first party and third party XBox controllers. Depending on which
-controller type you are using the global DEADZONE variable (found at the beginning of ambf_raven_controller.py) 
-may need to be modified to prevent drift or provide the most responsive control. If you experience drift (raven
-continuing to move even when there is no input) increase the DEADZONE variable until it stops.
+This controller has five main modes:
+1. **Homing Mode**: return raven to its home position (stored in TYPE_raven_def.HOME_JOINTS)
+2. **Manual Control**: use an xbox controller to control raven
+3. **File Controller Inputs**: motion from a csv containing recorded controller inputs
+4. **File jpos**: motion from a csv containing recorded jpos
+5. **Sine Dance**: do a little dance :) (only enabled for AMBF simulated Raven II)
 
-## Homing
-Accessed by pressing the h key when prompted to select a mode. This mode returns the simulated Raven II
-to its home position.
+We also developed a 
+[Data Analysis Tool](https://github.com/MHC-RobotSimulators-Research/Data_Analysis_MotionReplication) to rapidly analyze 
+the trajectories recorded by Raven II Dual Platform Controller.
 
-## Since Dance
-This mode has the simulated Raven II follow a pre-planned trajectory which moves all joints following 
-the sine function.
+## Usage:
 
-## File Mode
-Reads joint positions from a csv file and has the simulated Raven II follow move through the 
-defined positions. This was designed to take the recorded trajectories from a physical Raven II and 
-enable the simulated Raven II to mimic them. 
+### Tested Platforms:
+Raven II Dual Platform controller has been tested on Ubuntu 20.04 (Python 3.8 and ROS Noetic) and 22.04 
+(Python 3.10 and ROS Noetic)
 
-## Manual Mode
-Enable realtime control of the Simulated Raven II using an xbox controller. This mode implements both
-standard Raven II kinematics as well as modified kinematics designed for simpler more intuitive operation
-using the limited inputs on an Xbox controller. There are two control modes: two arm mode, and one arm mode.
-Manual mode was designed to allow Raven II to manipulate objects in its environment in realtime including 
-both rigid and soft bodies.
+### Dependencies:
+Requires ROS and a couple of ROS modules. Ensure you have ROS1 installed and build the 
+[CRTK Python Client](https://github.com/collaborative-robotics/crtk_python_client), 
+[CRTK Messages](https://github.com/collaborative-robotics/crtk_msgs), 
+[Raven 2](https://github.com/uw-biorobotics/raven2) modules.
 
-The two arms mode allows limited control of both arms simultaneously. By default it uses the modified 
-kinematics which lock joints 4,5, and 6 to their home position. This results in grasper being locked in 
-line with the tool shaft creating a tool which is more intuitive to move using the limited controls. 
-This mode uses the following control scheme.
-<img src="images/two_arm_scheme.png" width="700" alt="two arm scheme"/>
+Additionally, numpy, pandas, rospy are required. They can be installed with pip3 as follows:
+```
+sudo pip3 install numpy pandas rospy
+```
 
-The one arm control adds joint level control of joints 4 and 5. The positions of joints 4 and 5 will be
-maintained when switching back to the two arm mode and can be reset at any time using the mapped buttons.
-This mode uses the following control scheme.
-<img src="images/one_arm_scheme.png" width="700" alt="one arm scheme"/>
+### Installation:
+Clone this repository to your desired location
+```
+cd ~
+git clone https://github.com/MHC-RobotSimulators-Research/Raven2_standardized_controller
+```
+
+### Launching:
+The type of robot you wish to control is indicated with 2 flags at the end of the launch command, for the physical
+Raven II use:
+```
+cd ~/Raven2_standardized_controller
+python3 raven_controller.py 1 0     # For physical Raven II
+```
+And for the AMBF simulated Raven II use:
+```
+cd ~/Raven2_standardized_controller
+python3 raven_controller.py 0 1     # For AMBF Simulated Raven II
+```
+
+## Controller Mapping:
+<img src="images/mapping.png" width="" alt="Controller Mapping Scheme"/>

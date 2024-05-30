@@ -1,4 +1,27 @@
 """
+Raven II Dual Platform Controller: control software for the Raven II robot. Copyright © 2023-2024 Yun-Hsuan Su,
+Natalie Chalfant, Mai Bui, Sean Fabrega, and the Mount Holyoke Intelligent Medical Robotics Laboratory.
+
+This file is a part of Raven II Dual Platform Controller.
+
+Raven II Dual Platform Controller is free software: you can redistribute it and/or modify it under the terms of the
+GNU Lesser General Public License as published by the Free Software Foundation, either version 3 of the License,
+or (at your option) any later version.
+
+Raven II Dual Platform Controller is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+See the GNU Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public License along with Raven II Dual Platform Controller.
+If not, see <http://www.gnu.org/licenses/>.
+
+physical_raven_arm.py
+
+date: May 13, 2024
+author: Natalie Chalfant, Mai Bui, Sean Fabrega
+"""
+
+"""
 Raven 2 Control - Control software for the Raven II robot
 Copyright (C) 2005-2022  Andrew Lewis, Yun-Hsuan Su, Haonan Peng, Blake Hannaford,
 and the University of Washington BioRobotics Laboratory
@@ -111,7 +134,10 @@ class physical_raven_arm():
 
         # Subscriber and publisher of robot operation state
         topic = "/" + self.robot_name + "/operating_state"
-        self.__subscriber_operating_state = rospy.Subscriber(topic, crtk_msgs.msg.operating_state, self.__callback_operating_state)
+        try:
+            self.__subscriber_operating_state = rospy.Subscriber(topic, crtk_msgs.msg.operating_state, self.__callback_operating_state)
+        except AttributeError:
+            self.__subscriber_operating_state = rospy.Subscriber(topic, crtk_msgs.msg.OperatingState, self.__callback_operating_state)
 
         topic = "/" + self.robot_name + "/state_command"
         self.__publisher_state_command = rospy.Publisher(topic, crtk_msgs.msg.StringStamped, latch = True, queue_size = 1)
