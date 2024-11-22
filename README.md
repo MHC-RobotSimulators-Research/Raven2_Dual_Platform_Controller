@@ -1,7 +1,7 @@
 # Raven II Dual Platform Controller: control software for the Raven II robot
 Author: Natalie Chalfant (chalf22n@mtholyoke.edu), Mai Bui (bui23m@mtholyoke.edu), Sean Fabrega, Yun-Hsuan Su 
 (msu@mtholyoke.edu)
-[![Description video](https://markdown-videos-api.jorgenkh.no/youtube/{eDtycxnpn8c&t})](https://www.youtube.com/watch?v=eDtycxnpn8c&t=60s)
+[![Description video](https://github.com/MHC-RobotSimulators-Research/Raven2_Dual_Platform_Controller/blob/main/images/Description_video.png)](https://www.youtube.com/watch?v=eDtycxnpn8c&t=60s)
 
 ## Description:
 Raven II Dual Platform Controller is a Python client for controlling the Raven II robot using CRTK, and the simulated
