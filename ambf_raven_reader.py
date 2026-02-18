@@ -52,12 +52,13 @@ class ambf_raven_reader:
             else:
                 return False
         elif type_of_csv == "jpos":
-            if self.df.shape[1] == 240:
+            if self.df.shape[1] == 242:
                 self.status = True
                 self.length = self.df.shape[0]
                 print("Successfully loaded ", filename)
                 return True
             else:
+                print("Could not load ", filename)
                 return False
 
     def read_ci(self):
