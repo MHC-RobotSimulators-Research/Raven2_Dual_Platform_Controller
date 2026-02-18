@@ -267,35 +267,48 @@ class physical_raven:
         sets raven position based on array containing positions from the physical
         raven robot. offsets are approximate and need finalization. indexing is intuitive
         """
-        for i in range(len(pos_list)):
-            if i == 0:
-                self.arms[0].set_joint_pos(i, np.deg2rad(pos_list[i]) + (math.pi / 6))
-            elif i == 1:
-                self.arms[0].set_joint_pos(i, np.deg2rad(pos_list[i]) + (math.pi / 10))
-            elif i == 2:
-                self.arms[0].set_joint_pos(i, pos_list[i] / 100 - 0.26)
-            elif i == 4:
-                self.arms[0].set_joint_pos(i - 1, np.deg2rad(pos_list[i]) + (math.pi * 3) / 4)
-            elif i == 5:
-                self.arms[0].set_joint_pos(i - 1, np.deg2rad(pos_list[i]))
-            elif i == 6:
-                self.arms[0].set_joint_pos(i - 1, np.deg2rad(pos_list[i]) - math.pi / 12)
-            elif i == 7:
-                self.arms[0].set_joint_pos(i - 1, np.deg2rad(pos_list[i]) - math.pi / 12)
-            elif i == 8:
-                self.arms[1].set_joint_pos(i - 8, np.deg2rad(pos_list[i]) + math.pi / 6)
-            elif i == 9:
-                self.arms[1].set_joint_pos(i - 8, np.deg2rad(pos_list[i]) + math.pi / 10)
-            elif i == 10:
-                self.arms[1].set_joint_pos(i - 8, pos_list[i] / 100 - 0.26)
-            elif i == 12:
-                self.arms[1].set_joint_pos(i - 9, np.deg2rad(pos_list[i]) + (math.pi * 3) / 4)
-            elif i == 13:
-                self.arms[1].set_joint_pos(i - 9, np.deg2rad(pos_list[i]))
-            elif i == 14:
-                self.arms[1].set_joint_pos(i - 9, np.deg2rad(pos_list[i]) - math.pi / 12)
-            elif i == 15:
-                self.arms[1].set_joint_pos(i - 9, np.deg2rad(pos_list[i]) - math.pi / 12)
+        # Update start_jp to previous target
+        self.start_jp = self.next_jp
+        # Update next_jp with input pos
+        incoming_jp = [pos_list[:8], pos_list[8:]]
+        new_jp = np.zeros((2, 7))
+
+        for i in range(len(self.arms)):
+            # Just take first 7 elements. What should happen with the second grasper angle? should they both get added?
+            new_jp[i] = incoming_jp[i][7]
+
+        self.next_jp = new_jp
+        self.move()
+
+        # for i in range(len(pos_list)):
+        #     if i == 0:
+        #         self.arms[0].set_joint_pos(i, np.deg2rad(pos_list[i]) + (math.pi / 6))
+        #     elif i == 1:
+        #         self.arms[0].set_joint_pos(i, np.deg2rad(pos_list[i]) + (math.pi / 10))
+        #     elif i == 2:
+        #         self.arms[0].set_joint_pos(i, pos_list[i] / 100 - 0.26)
+        #     elif i == 4:
+        #         self.arms[0].set_joint_pos(i - 1, np.deg2rad(pos_list[i]) + (math.pi * 3) / 4)
+        #     elif i == 5:
+        #         self.arms[0].set_joint_pos(i - 1, np.deg2rad(pos_list[i]))
+        #     elif i == 6:
+        #         self.arms[0].set_joint_pos(i - 1, np.deg2rad(pos_list[i]) - math.pi / 12)
+        #     elif i == 7:
+        #         self.arms[0].set_joint_pos(i - 1, np.deg2rad(pos_list[i]) - math.pi / 12)
+        #     elif i == 8:
+        #         self.arms[1].set_joint_pos(i - 8, np.deg2rad(pos_list[i]) + math.pi / 6)
+        #     elif i == 9:
+        #         self.arms[1].set_joint_pos(i - 8, np.deg2rad(pos_list[i]) + math.pi / 10)
+        #     elif i == 10:
+        #         self.arms[1].set_joint_pos(i - 8, pos_list[i] / 100 - 0.26)
+        #     elif i == 12:
+        #         self.arms[1].set_joint_pos(i - 9, np.deg2rad(pos_list[i]) + (math.pi * 3) / 4)
+        #     elif i == 13:
+        #         self.arms[1].set_joint_pos(i - 9, np.deg2rad(pos_list[i]))
+        #     elif i == 14:
+        #         self.arms[1].set_joint_pos(i - 9, np.deg2rad(pos_list[i]) - math.pi / 12)
+        #     elif i == 15:
+        #         self.arms[1].set_joint_pos(i - 9, np.deg2rad(pos_list[i]) - math.pi / 12)
 
     def set_raven_force(self, pos_list):
         """
