@@ -179,7 +179,7 @@ class ambf_raven_recorder:
         filename_ci = filename + "_" + str(datetime.now()) + "_ci.csv"
 
         if self.rs_df is not None:
-            self.rs_df.to_csv(filename_rs, encoding='utf-8', index=True)
+            self.rs_df.to_csv(filename_rs, encoding='utf-8', index=False)
             self.rs_df = None
         if self.ci_df is not None:
             self.ci_df.to_csv(filename_ci, encoding='utf-8', index=False)
