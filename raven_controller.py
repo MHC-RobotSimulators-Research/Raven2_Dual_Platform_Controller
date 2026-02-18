@@ -428,10 +428,27 @@ def do(ravens, xbc, grasper, recorder=None, reader=None):
                         print("I AM SPEED")
 
                 for raven in ravens:
-                    ravens[raven].set_raven_pos(jpos)
+                    raven.set_raven_pos(jpos)
+
+                    if RECORD:
+                        if RECORDING:
+                            recorder.write_raven_status(raven)
+                            # recorder.write_controller_inputs(controller)
+
+                        else:
+                            recorder.record_raven_status()
+                            # recorder.record_controller_inputs()
+                            recorder.write_raven_status(raven)
+                            # recorder.write_controller_inputs(controller)
+                            RECORDING = True
 
             # When finished reset control
             control_reset()
+            if RECORDING:
+                recorder.stop_recording(FILE_OUT)
+                RECORDING = False
+                RECORD = False
+
 
         while CONTROL[4]:
             '''
@@ -542,11 +559,11 @@ def _get_input():
             print("File jpos selected\n")
             set_file_in()
             check_record()
-            CONTROL[4] = True
+            CONTROL[3] = True
             continue
         elif userinput == '5':
             control_reset()
-            CONTROL[5] = True
+            CONTROL[4] = True
             print("Sine Dance selected\n"
                   "Press a key to switch modes or press 'm' to show the menu\n")
             continue
