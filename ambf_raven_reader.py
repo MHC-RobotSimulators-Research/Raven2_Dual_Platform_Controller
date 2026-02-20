@@ -52,7 +52,7 @@ class ambf_raven_reader:
             else:
                 return False
         elif type_of_csv == "jpos":
-            if self.df.shape[1] == 242:
+            if self.df.shape[1] == 241:
                 self.status = True
                 self.length = self.df.shape[0]
                 print("Successfully loaded ", filename)
@@ -79,4 +79,5 @@ class ambf_raven_reader:
             return time, jp
         else:
             self.stop()
+            return None, None
 
