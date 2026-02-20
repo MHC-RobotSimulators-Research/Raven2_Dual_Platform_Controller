@@ -117,6 +117,8 @@ class ambf_raven_recorder:
         for i in range(12):
             headers.append("jac_f" + str(i))
 
+        headers.append("interaction_status")
+
         return headers
 
     def record_raven_status(self):
