@@ -121,6 +121,9 @@ class physical_raven_arm():
         self.new_jp = np.zeros(7)
         self.__init_pub_sub()
 
+        #initialize interaction status
+        self.interaction_status = False
+
         #boolean if pass the limit
         self.limited = [False, False]
         return None
@@ -156,6 +159,10 @@ class physical_raven_arm():
 
         topic = "/" + "ravenstate"
         self.__subscriber_raven_state = rospy.Subscriber(topic, raven_2.msg.raven_state, self.__callback_raven_state)
+
+        # Get Interaction msg
+        topic = "interaction"
+        self.__subscriber_interact = rospy.Subscriber(topic, std_msgs.msg.Bool, self.__callback_interact)
 
         # robot movement publishers
         topic = "/" + self.robot_name + "/servo_cr"
@@ -392,3 +399,9 @@ class physical_raven_arm():
     def fifthteen2seven (self, arr15):
         
         return arr15[1:8]
+
+    def __callback_interact(self, msg):
+        self.interaction_status = msg.data
+
+    def get_interaction_status(self):
+        return self.interaction_status
