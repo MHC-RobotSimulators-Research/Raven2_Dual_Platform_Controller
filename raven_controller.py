@@ -75,7 +75,7 @@ SHOW_TM = False
 GRASPING = False
 FILE_OUT = ""
 FILE_IN = ""
-SHOW_FREQUENCY = True
+SHOW_FREQUENCY = False
 
 
 def control_reset():
@@ -416,6 +416,12 @@ def do(ravens, xbc, grasper, recorder=None, reader=None):
             while reader.get_status():
                 csv_time, jpos = reader.read_jp()
 
+                if csv_time is None:
+                    print("Reached End of File")
+                    break
+
+                csv_time = csv_time[0]
+
                 if csv_start_time is None:
                     csv_start_time = csv_time
 
@@ -425,7 +431,7 @@ def do(ravens, xbc, grasper, recorder=None, reader=None):
                     delta_time = curr_csv_time - curr_time
                     if 0 < delta_time:
                         time.sleep(delta_time)
-                        print("I AM SPEED")
+                        # print("I AM SPEED")
 
                 for raven in ravens:
                     raven.set_raven_pos(jpos)
