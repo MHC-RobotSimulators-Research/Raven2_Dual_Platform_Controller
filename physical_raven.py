@@ -173,7 +173,7 @@ class physical_raven:
     def get_raven_status(self):
         msg = self.arms[0].get_raven_state()
 
-        status = np.zeros((1, 240))
+        status = np.zeros((1, 241))
         timestr = "%.6f" % msg.hdr.stamp.to_sec()
         status[0] = timestr
         idx_count = 1
@@ -260,6 +260,14 @@ class physical_raven:
             status[0, idx_count] = ("%.6f" % msg.jac_f[index])
             idx_count += 1
 
+        # Get Interaction Status
+        interation_status = self.arms[0].get_interaction_status()
+        if interation_status:
+            status[0, idx_count] = 1
+        else:
+            status[0, idx_count] = 0
+        idx_count += 1
+
         return status.tolist()[0]
 
     def set_raven_pos(self, pos_list):
@@ -270,12 +278,13 @@ class physical_raven:
         # Update start_jp to previous target
         self.start_jp = self.next_jp
         # Update next_jp with input pos
-        incoming_jp = [pos_list[:8], pos_list[8:]]
+        incoming_jp = [pos_list[0][:8], pos_list[0][8:]]
         new_jp = np.zeros((2, 7))
 
         for i in range(len(self.arms)):
             # Just take first 7 elements. What should happen with the second grasper angle? should they both get added?
-            new_jp[i] = incoming_jp[i][7]
+            incoming_jp[i].pop(3)
+            new_jp[i] = incoming_jp[i]
 
         self.next_jp = new_jp
         self.move()
